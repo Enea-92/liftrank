@@ -1,13 +1,16 @@
 {
   "expo": {
-    "name": "liftrank",
+    "name": "LiftRank",
     "slug": "liftrank",
+    "scheme": "liftrank",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0D12",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourname.liftrank"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,9 +19,17 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "package": "com.yourname.liftrank",
       "predictiveBackGestureEnabled": false
     },
     "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "LiftRank",
+      "shortName": "LiftRank",
+      "description": "Free gym tracker with strength ranks. No subscription.",
+      "themeColor": "#0B0D12",
+      "backgroundColor": "#0B0D12",
       "favicon": "./assets/favicon.png"
     }
   }

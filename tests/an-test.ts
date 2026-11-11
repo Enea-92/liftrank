@@ -1,0 +1,37 @@
+import { diffRanks } from '../src/lib/rankup';
+import { weeklyBuckets, groupTotals, exerciseTotals, averageDuration, startOfWeek } from '../src/lib/stats';
+let fail = 0; const ok = (c: boolean, m: string) => { if (!c) { fail++; console.log('FAIL', m); } };
+const snap = (o: any, m: any, l: any) => ({ overall: o, muscles: m, lifts: l });
+let d = diffRanks(snap(4, { Chest: 4, Back: 3 }, { bench: 4 }), snap(5, { Chest: 5, Back: 3 }, { bench: 5 }));
+ok(d.length === 3 && d[0].scope === 'overall' && d[1].key === 'Chest' && d[2].key === 'bench', 'overall, muscle, lift in order');
+ok(d[0].from === 4 && d[0].to === 5, 'from/to');
+ok(diffRanks(snap(4, {}, {}), snap(4, {}, {})).length === 0, 'no change -> none');
+ok(diffRanks(snap(5, { Chest: 5 }, { bench: 5 }), snap(3, { Chest: 3 }, { bench: 3 })).length === 0, 'drops are not reported');
+d = diffRanks(snap(null, { Chest: null }, {}), snap(0, { Chest: 0 }, { bench: 0 }));
+ok(d.length === 0, 'first ever log at Newbie is not a rank up');
+d = diffRanks(snap(null, { Chest: null }, {}), snap(3, { Chest: 3 }, { bench: 3 }));
+ok(d.length === 3 && d.every((x) => x.from === 0 && x.to === 3), 'first log above Newbie counts from Newbie');
+d = diffRanks(snap(2, { Chest: 2 }, { bench: 2 }), snap(2, { Chest: 2, Back: 4 }, { bench: 2, row: 4 }));
+ok(d.length === 2 && d[0].key === 'Back' && d[1].key === 'row', 'new muscle/lift above Newbie reported');
+
+const now = new Date(2026, 10, 11, 12).getTime(); const DAY = 86400000;
+const set = (w: number, r: number) => ({ id: 's' + Math.random(), weightKg: w, reps: r, done: true });
+const wk = (daysAgo: number, ex: [string, [number, number][]][], dur = 3600000): any => {
+  const t = now - daysAgo * DAY; return { id: 'w' + Math.random(), startedAt: t, finishedAt: t + dur, name: 'x', exercises: ex.map(([id, ss]) => ({ id: 'e' + Math.random(), exerciseId: id, sets: ss.map(([w, r]) => set(w, r)) })) };
+};
+const ws = [wk(0, [['bench', [[100, 5], [100, 5]]], ['squat', [[140, 5]]]]), wk(2, [['bench', [[90, 8]]]]), wk(9, [['squat', [[130, 5]]]], 1800000), wk(100, [['bench', [[50, 10]]]])];
+const b = weeklyBuckets(ws, 4, now);
+ok(b.length === 4 && b[3].start === startOfWeek(now), 'last bucket is this week, oldest first');
+ok(b[3].sessions === 2 && b[3].sets === 4 && b[3].volumeKg === 1000 + 700 + 720, 'this week totals');
+ok(b[2].sessions === 1 && b[2].volumeKg === 650, 'last week');
+ok(b[0].sessions === 0 && b[1].sessions === 0, 'empty weeks present');
+ok(b.reduce((a, x) => a + x.sessions, 0) === 3, '100-day-old workout excluded');
+const g = groupTotals(ws, (id) => (id === 'bench' ? 'Chest' : id === 'squat' ? 'Quads' : undefined), now - 30 * DAY);
+ok(g.Chest.sets === 3 && g.Quads.sets === 2 && !('x' in g), 'group sets in window');
+ok(groupTotals(ws, () => undefined, 0) && Object.keys(groupTotals(ws, () => undefined, 0)).length === 0, 'skipped groups absent');
+const et = exerciseTotals(ws);
+ok(et[0].exerciseId === 'bench' || et[0].exerciseId === 'squat', 'sorted by volume');
+const bench = et.find((x) => x.exerciseId === 'bench')!; ok(bench.sessions === 3 && bench.sets === 4, 'exercise totals');
+ok(Math.round(averageDuration(ws) / 60000) === Math.round((3600000 * 3 + 1800000) / 4 / 60000), 'average duration');
+ok(averageDuration([]) === 0, 'no workouts');
+console.log(fail ? fail + ' FAILURES' : 'ALL ANALYTICS/RANKUP TESTS PASS');
